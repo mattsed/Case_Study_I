@@ -1,60 +1,62 @@
 import streamlit as st
 
+# Definition der User-Klasse
+class User:
+    def __init__(self, email: str, name: str):
+        self.email = email
+        self.name = name
+
+    def __repr__(self):
+        return f"{self.name} ({self.email})"
+
+# Initialisierung von Session State für die Benutzerverwaltung
+if "users" not in st.session_state:
+    st.session_state.users = []  # Liste für User-Objekte
+
+# Überschrift für die Benutzerverwaltung
+st.write("# Gerätemanagement")
+st.write("## Nutzer-Verwaltung")
+
+# Spalten für Benutzeraktionen
+col1, col2 = st.columns(2)
+
+# Nutzer hinzufügen
+with col1:
+    st.subheader("Nutzer anlegen")
+    new_name = st.text_input("Geben Sie den Nutzernamen ein:", key="new_user_name")
+    new_email = st.text_input("Geben Sie die E-Mail-Adresse ein:", key="new_user_email")
+    if st.button("Nutzer hinzufügen", key="add_user_button"):
+        if new_name and new_email:
+            # Prüfen, ob der Nutzer bereits existiert (basierend auf der E-Mail-Adresse)
+            if not any(user.email == new_email for user in st.session_state.users):
+                # Neuen Nutzer hinzufügen
+                new_user = User(email=new_email, name=new_name)
+                st.session_state.users.append(new_user)
+                st.success(f"Nutzer '{new_user.name}' mit der E-Mail '{new_user.email}' wurde erfolgreich hinzugefügt!")
+            else:
+                st.warning(f"Ein Nutzer mit der E-Mail '{new_email}' existiert bereits!")
+        else:
+            st.error("Bitte geben Sie sowohl einen Nutzernamen als auch eine E-Mail-Adresse ein.")
+
+# Liste der bestehenden Nutzer anzeigen
+with col2:
+    st.subheader("Bestehende Nutzer")
+    if st.session_state.users:
+        st.write("### Liste der Nutzer:")
+        for user in st.session_state.users:
+            st.write(f"- {user}")
+    else:
+        st.info("Es sind keine Nutzer angelegt.")
+
+# Geräteauswahl
+st.write("## Geräteauswahl")
+
 if "sb_current_device" not in st.session_state:
     st.session_state.sb_current_device = ""
 
-# Eine Überschrift der ersten Ebene
-st.write("# Gerätemanagement")
+st.session_state.sb_current_device = st.selectbox(
+    label="Gerät auswählen",
+    options=["Gerät_A", "Gerät_B", "Gerät_C"]
+)
 
-# Eine Überschrift der zweiten Ebene
-st.write("## Geräteauswahl")
-
-# Eine Auswahlbox mit hard-gecoded Optionen, das Ergebnis
-
-st.session_state.sb_current_device = st.selectbox(label='Gerät auswählen',
-        options = ["Gerät_A", "Gerät_B", "Gerät_C"])
-
-st.write(F"Das ausgewählte Gerät ist {st.session_state.sb_current_device}")
-
-st.write("## Wartungskosten")
-
-# Callbacks for the number inputs
-def update_price_from_euro():
-    st.session_state.price_dollar = st.session_state.price_euro * 1.1
-
-def update_price_from_dollar():
-    st.session_state.price_euro = st.session_state.price_dollar * 0.9
-
-# Number inputs for the maintenance costs
-st.number_input(label="Wartungskosten in Euro", 
-                            key = "price_euro",
-                            on_change=update_price_from_euro)
-
-st.number_input(label="Wartungskosten in Dollar", 
-                            key = "price_dollar",
-                            on_change=update_price_from_dollar)
-
-
-col1, col2 = st.columns(2)
-
-with col1:
-   st.header("A cat")
-   #st.image("https://static.streamlit.io/examples/cat.jpg")
-
-with col2:
-   st.header("A dog")
-   #st.image("https://static.streamlit.io/examples/dog.jpg")
-
-tab1, tab2, tab3 = st.tabs(["Cat", "Dog", "Owl"])
-
-with tab1:
-   st.header("A cat")
-   st.image("https://static.streamlit.io/examples/cat.jpg", width=200)
-
-with tab2:
-   st.header("A dog")
-   st.image("https://static.streamlit.io/examples/dog.jpg", width=200)
-
-with tab3:
-   st.header("An owl")
-   st.image("https://static.streamlit.io/examples/owl.jpg", width=200)
+st.write(f"Das ausgewählte Gerät ist: {st.session_state.sb_current_device}")
