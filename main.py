@@ -1,9 +1,5 @@
 import streamlit as st
-import json
-import os
 
-# Dateipfad für das Speichern der Nutzerdaten
-DATA_FILE = "users_data.json"
 
 
 # Definition der User-Klasse
@@ -25,16 +21,6 @@ class User:
         return User(email=data["email"], name=data["name"])
 
 
-# Definition der Gerät-Klasse
-class Device:
-    def __init__(self, name: str, device_type: str, status: str = "Inaktiv"):
-        self.name = name
-        self.device_type = device_type
-        self.status = status
-
-    def __repr__(self):
-        return f"{self.name} ({self.device_type}) - Status: {self.status}"
-
 # Funktionen für die persistente Speicherung
 def load_users():
     """Lade Nutzer aus der JSON-Datei."""
@@ -44,6 +30,7 @@ def load_users():
             return [User.from_dict(user) for user in data]
     return []
 
+
 def save_users(users):
     """Speichere Nutzer in der JSON-Datei."""
     with open(DATA_FILE, "w") as file:
@@ -52,10 +39,7 @@ def save_users(users):
 
 # Initialisiere Nutzerliste in Session State
 if "users" not in st.session_state:
-    st.session_state.users = load_users()
-
-if "selected_user" not in st.session_state:
-    st.session_state.selected_user = None
+    st.session_state.users = []  # Liste für User-Objekte
 
 if "devices" not in st.session_state:
     st.session_state.devices = []  # Liste für Device-Objekte
@@ -66,26 +50,26 @@ if "authenticated" not in st.session_state:
 # App-Bereich: Nutzer-Verwaltung
 st.write("# Nutzermanagement")
 
-# Nutzer hinzufügen oder anmelden
-if not st.session_state.authenticated:
-    col1, col2 = st.columns(2)
+# Spalten für Aktionen
+col1, col2 = st.columns(2)
 
-    # Nutzer hinzufügen
-    with col1:
-        st.subheader("Nutzer anlegen")
-        new_name = st.text_input("Geben Sie den Nutzernamen ein:")
-        new_email = st.text_input("Geben Sie die E-Mail-Adresse ein:")
-        if st.button("Nutzer hinzufügen"):
-            if new_name and new_email:
-                if not any(user.email == new_email for user in st.session_state.users):
-                    new_user = User(email=new_email, name=new_name)
-                    st.session_state.users.append(new_user)
-                    save_users(st.session_state.users)
-                    st.success(f"Nutzer '{new_user.name}' wurde erfolgreich angelegt!")
-                else:
-                    st.warning(f"Ein Nutzer mit der E-Mail '{new_email}' existiert bereits!")
+# Nutzer hinzufügen
+with col1:
+    st.subheader("Nutzer anlegen")
+    new_name = st.text_input("Geben Sie den Nutzernamen ein:")
+    new_email = st.text_input("Geben Sie die E-Mail-Adresse ein:")
+    if st.button("Nutzer hinzufügen"):
+        if new_name and new_email:
+            # Prüfen, ob die E-Mail bereits existiert
+            if not any(user.email == new_email for user in st.session_state.users):
+                new_user = User(email=new_email, name=new_name)
+                st.session_state.users.append(new_user)
+                save_users(st.session_state.users)  # Speichere Nutzer
+                st.success(f"Nutzer '{new_user.name}' wurde hinzugefügt!")
             else:
-                st.error("Bitte alle Felder ausfüllen!")
+                st.warning(f"Ein Nutzer mit der E-Mail '{new_email}' existiert bereits!")
+        else:
+            st.error("Bitte geben Sie sowohl einen Namen als auch eine E-Mail-Adresse ein.")
 
     # Nutzer anmelden
     with col2:
@@ -153,9 +137,5 @@ else:
                 st.warning(f"Gerät '{device.name}' wurde gelöscht.")
                 st.experimental_rerun()
     else:
-        st.info("Es sind keine Geräte registriert.")
+        st.info("Es sind keine Nutzer vorhanden.")
 
-    # Geräteübersicht als Tabelle
-    if st.session_state.devices:
-        st.subheader("Geräteübersicht")
-        st.table([{"Name": device.name, "Typ": device.device_type, "Status": device.status} for device in st.session_state.devices])
