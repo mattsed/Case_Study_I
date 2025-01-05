@@ -1,5 +1,7 @@
 import streamlit as st
 
+
+
 # Definition der User-Klasse
 class User:
     def __init__(self, email: str, name: str):
@@ -17,7 +19,7 @@ if "users" not in st.session_state:
 st.write("# Gerätemanagement")
 st.write("## Nutzer-Verwaltung")
 
-# Spalten für Benutzeraktionen
+# Spalten für Benutzeraktionen.\venv\Scripts\activate
 col1, col2 = st.columns(2)
 
 # Nutzer hinzufügen
@@ -60,3 +62,6 @@ st.session_state.sb_current_device = st.selectbox(
 )
 
 st.write(f"Das ausgewählte Gerät ist: {st.session_state.sb_current_device}")
+
+
+print("Hello, World!")
