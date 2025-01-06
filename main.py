@@ -7,6 +7,8 @@ from datetime import datetime
 USER_DATA_FILE = "users_data.json"
 DEVICE_DATA_FILE = "devices_data.json"
 
+##################################################################################################################################
+
 # Definition der User-Klasse
 class User:
     def __init__(self, email: str, name: str):
@@ -59,6 +61,7 @@ class Device:
             end_of_life=datetime.fromisoformat(data["end_of_life"]),
         )
 
+###########################################################################################################################################
 
 # Spezifische Funktionen für Nutzer
 def load_users():
@@ -91,6 +94,7 @@ def save_devices(devices):
     with open(DEVICE_DATA_FILE, "w") as file:
         json.dump([device.to_dict() for device in devices], file)
 
+###############################################################################################################################################
 
 # Initialisiere Nutzer- und Gerätelisten in Session State
 if "users" not in st.session_state:
@@ -99,6 +103,7 @@ if "users" not in st.session_state:
 if "devices" not in st.session_state:
     st.session_state.devices = load_devices()
 
+###############################################################################################################################################
 
 # Seiten-Logik
 def show_user_management():
@@ -165,12 +170,15 @@ def show_device_management():
         for device in st.session_state.devices:
             st.write(device)
 
+#####################################################################################################################################
 
 # Hauptmenü
 st.write("# Gerätemanagement System")
 st.write("## Navigation")
 
 menu_option = st.selectbox("Wählen Sie eine Option:", ["Nutzerverwaltung", "Geräteverwaltung"])
+
+st.markdown("<br><br>", unsafe_allow_html=True)
 
 if menu_option == "Nutzerverwaltung":
     show_user_management()
