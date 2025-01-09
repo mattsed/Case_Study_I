@@ -1,100 +1,13 @@
 import streamlit as st
-import json
-import os
+from devices import Device, load_devices, save_devices
+from users import User, load_users, save_users 
 from datetime import datetime
 
 # Dateipfade für das Speichern der Nutzerdaten und Gerätedaten
-USER_DATA_FILE = "users_data.json"
-DEVICE_DATA_FILE = "devices_data.json"
+#USER_DATA_FILE = "users_data.json"
+#DEVICE_DATA_FILE = "devices_data.json"
 
 ##################################################################################################################################
-
-# Definition der User-Klasse
-class User:
-    def __init__(self, email: str, name: str):
-        self.email = email
-        self.name = name
-
-    def __repr__(self):
-        return f"{self.name} ({self.email})"
-
-    def to_dict(self):
-        """Konvertiere User-Objekt in ein Dictionary."""
-        return {"email": self.email, "name": self.name}
-
-    @staticmethod
-    def from_dict(data):
-        """Erstelle ein User-Objekt aus einem Dictionary."""
-        return User(email=data["email"], name=data["name"])
-
-
-# Definition der Device-Klasse
-class Device:
-    def __init__(self, id: int, name: str, responsible_person: User, creation_date: datetime, end_of_life: datetime):
-        self.id = id
-        self.name = name
-        self.responsible_person = responsible_person
-        self.creation_date = creation_date
-        self.end_of_life = end_of_life
-
-    def __repr__(self):
-        return f"Gerät: {self.name}, Verantwortlich: {self.responsible_person.name}"
-
-    def to_dict(self):
-        """Konvertiere Device-Objekt in ein Dictionary."""
-        return {
-            "id": self.id,
-            "name": self.name,
-            "responsible_person": self.responsible_person.to_dict(),
-            "creation_date": self.creation_date.isoformat(),
-            "end_of_life": self.end_of_life.isoformat(),
-        }
-
-    @staticmethod
-    def from_dict(data):
-        """Erstelle ein Device-Objekt aus einem Dictionary."""
-        return Device(
-            id=data["id"],
-            name=data["name"],
-            responsible_person=User.from_dict(data["responsible_person"]),
-            creation_date=datetime.fromisoformat(data["creation_date"]),
-            end_of_life=datetime.fromisoformat(data["end_of_life"]),
-        )
-
-###########################################################################################################################################
-
-# Spezifische Funktionen für Nutzer
-def load_users():
-    """Lade Nutzer aus der JSON-Datei."""
-    if os.path.exists(USER_DATA_FILE):
-        with open(USER_DATA_FILE, "r") as file:
-            data = json.load(file)
-            return [User.from_dict(user) for user in data]
-    return []
-
-
-def save_users(users):
-    """Speichere Nutzer in der JSON-Datei."""
-    with open(USER_DATA_FILE, "w") as file:
-        json.dump([user.to_dict() for user in users], file)
-
-
-# Spezifische Funktionen für Geräte
-def load_devices():
-    """Lade Geräte aus der JSON-Datei."""
-    if os.path.exists(DEVICE_DATA_FILE):
-        with open(DEVICE_DATA_FILE, "r") as file:
-            data = json.load(file)
-            return [Device.from_dict(device) for device in data]
-    return []
-
-
-def save_devices(devices):
-    """Speichere Geräte in der JSON-Datei."""
-    with open(DEVICE_DATA_FILE, "w") as file:
-        json.dump([device.to_dict() for device in devices], file)
-
-###############################################################################################################################################
 
 # Initialisiere Nutzer- und Gerätelisten in Session State
 if "users" not in st.session_state:
@@ -103,7 +16,7 @@ if "users" not in st.session_state:
 if "devices" not in st.session_state:
     st.session_state.devices = load_devices()
 
-###############################################################################################################################################
+##################################################################################################################################
 
 # Seiten-Logik
 def show_user_management():
