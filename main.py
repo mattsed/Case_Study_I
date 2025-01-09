@@ -81,7 +81,7 @@ def show_device_management():
     with col2:
         st.subheader("Vorhandene Geräte")
         for device in st.session_state.devices:
-            st.write(device)
+            st.write(f"- {device.name}, ID: {device.id} ")
 
 #####################################################################################################################################
 
