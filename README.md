@@ -4,4 +4,4 @@ In dieser Case Study wird eine Software entwickelt, um Geräte zu verwalten. Mit
 
 Für jedes Gerät wird gleichzeitig eine verantwortliche Person hinterlegt, welche sich um die Wartung und Reservierung kümmert.
 
-![grafik](https://github.com/user-attachments/assets/893c7718-5817-4440-a941-76c6728632c1)
+
