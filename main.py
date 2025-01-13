@@ -80,6 +80,22 @@ def show_device_management():
 
     with col2:
         st.subheader("Vorhandene Geräte")
+        if st.session_state.devices:
+            # Dropdown für das Löschen eines Geräts
+            device_to_delete = st.selectbox(
+                "Wählen Sie ein Gerät zum Löschen aus:",
+                options=st.session_state.devices,
+                format_func=lambda device: f"{device.name} (ID: {device.id})"
+            )
+            if st.button("Gerät löschen"):
+                st.session_state.devices = [
+                    device for device in st.session_state.devices if device != device_to_delete
+                ]
+                save_devices(st.session_state.devices)
+                st.success(f"Gerät '{device_to_delete.name}' wurde erfolgreich gelöscht!")
+    
+        else:
+            st.info("Keine Geräte vorhanden.")
         for device in st.session_state.devices:
             st.write(f"- {device.name}, ID: {device.id} ")
 
