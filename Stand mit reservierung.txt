@@ -1,0 +1,327 @@
+import streamlit as st
+import json
+import os
+from datetime import datetime
+from collections import deque
+
+# Dateipfade für das Speichern der Nutzerdaten und Gerätedaten
+USER_DATA_FILE = "users_data.json"
+DEVICE_DATA_FILE = "devices_data.json"
+RESERVATION_DATA_FILE = "reservations_data.json"
+WAITLIST_DATA_FILE = "waitlist_data.json"
+
+# Definition der User-Klasse
+class User:
+    def __init__(self, email: str, name: str):
+        self.email = email
+        self.name = name
+
+    def __repr__(self):
+        return f"{self.name} ({self.email})"
+
+    def to_dict(self):
+        """Konvertiere User-Objekt in ein Dictionary."""
+        return {"email": self.email, "name": self.name}
+
+    @staticmethod
+    def from_dict(data):
+        """Erstelle ein User-Objekt aus einem Dictionary."""
+        return User(email=data["email"], name=data["name"])
+
+
+# Definition der Device-Klasse
+class Device:
+    def __init__(self, id: int, name: str, responsible_person: User, creation_date: datetime, end_of_life: datetime):
+        self.id = id
+        self.name = name
+        self.responsible_person = responsible_person
+        self.creation_date = creation_date
+        self.end_of_life = end_of_life
+
+    def __repr__(self):
+        return f"Gerät: {self.name}, Verantwortlich: {self.responsible_person.name}"
+
+    def to_dict(self):
+        """Konvertiere Device-Objekt in ein Dictionary."""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "responsible_person": self.responsible_person.to_dict(),
+            "creation_date": self.creation_date.isoformat(),
+            "end_of_life": self.end_of_life.isoformat(),
+        }
+
+    @staticmethod
+    def from_dict(data):
+        """Erstelle ein Device-Objekt aus einem Dictionary."""
+        return Device(
+            id=data["id"],
+            name=data["name"],
+            responsible_person=User.from_dict(data["responsible_person"]),
+            creation_date=datetime.fromisoformat(data["creation_date"]),
+            end_of_life=datetime.fromisoformat(data["end_of_life"]),
+        )
+
+# Definition der Reservation-Klasse
+class Reservation:
+    def __init__(self, device: Device, user: User, reservation_date: datetime):
+        self.device = device
+        self.user = user
+        self.reservation_date = reservation_date
+
+    def __repr__(self):
+        return f"Reservierung: {self.device.name}, Benutzer: {self.user.name}, Datum: {self.reservation_date}"
+
+    def to_dict(self):
+        """Konvertiere Reservation-Objekt in ein Dictionary."""
+        return {
+            "device": self.device.to_dict(),
+            "user": self.user.to_dict(),
+            "reservation_date": self.reservation_date.isoformat(),
+        }
+
+    @staticmethod
+    def from_dict(data):
+        """Erstelle ein Reservation-Objekt aus einem Dictionary."""
+        return Reservation(
+            device=Device.from_dict(data["device"]),
+            user=User.from_dict(data["user"]),
+            reservation_date=datetime.fromisoformat(data["reservation_date"]),
+        )
+
+# Spezifische Funktionen für Reservierungen und Warteschlange
+def load_reservations():
+    """Lade Reservierungen aus der JSON-Datei."""
+    if os.path.exists(RESERVATION_DATA_FILE):
+        with open(RESERVATION_DATA_FILE, "r") as file:
+            data = json.load(file)
+            return [Reservation.from_dict(reservation) for reservation in data]
+    return []
+
+
+def save_reservations(reservations):
+    """Speichere Reservierungen in der JSON-Datei."""
+    with open(RESERVATION_DATA_FILE, "w") as file:
+        json.dump([reservation.to_dict() for reservation in reservations], file)
+
+def load_waitlist():
+    """Lade Warteliste aus der JSON-Datei."""
+    if os.path.exists(WAITLIST_DATA_FILE):
+        with open(WAITLIST_DATA_FILE, "r") as file:
+            return json.load(file)
+    return {}
+
+
+def save_waitlist(waitlist):
+    """Speichere Warteliste in der JSON-Datei."""
+    with open(WAITLIST_DATA_FILE, "w") as file:
+        json.dump(waitlist, file)
+
+# Spezifische Funktionen für Nutzer
+def load_users():
+    """Lade Nutzer aus der JSON-Datei."""
+    if os.path.exists(USER_DATA_FILE):
+        with open(USER_DATA_FILE, "r") as file:
+            data = json.load(file)
+            return [User.from_dict(user) for user in data]
+    return []
+
+
+def save_users(users):
+    """Speichere Nutzer in der JSON-Datei."""
+    with open(USER_DATA_FILE, "w") as file:
+        json.dump([user.to_dict() for user in users], file)
+
+
+# Spezifische Funktionen für Geräte
+def load_devices():
+    """Lade Geräte aus der JSON-Datei."""
+    if os.path.exists(DEVICE_DATA_FILE):
+        with open(DEVICE_DATA_FILE, "r") as file:
+            data = json.load(file)
+            return [Device.from_dict(device) for device in data]
+    return []
+
+
+def save_devices(devices):
+    """Speichere Geräte in der JSON-Datei."""
+    with open(DEVICE_DATA_FILE, "w") as file:
+        json.dump([device.to_dict() for device in devices], file)
+
+
+# Initialisiere Nutzer-, Geräte- und Reservierungslisten in Session State
+if "users" not in st.session_state:
+    st.session_state.users = load_users()
+
+if "devices" not in st.session_state:
+    st.session_state.devices = load_devices()
+
+if "reservations" not in st.session_state:
+    st.session_state.reservations = load_reservations()
+
+if "waitlist" not in st.session_state:
+    st.session_state.waitlist = load_waitlist()
+
+# Seiten-Logik
+def show_user_management():
+    st.write("## Nutzerverwaltung")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Nutzer anlegen")
+        new_name = st.text_input("Name des Nutzers:")
+        new_email = st.text_input("E-Mail des Nutzers:")
+        if st.button("Nutzer hinzufügen"):
+            if new_name and new_email:
+                if not any(user.email == new_email for user in st.session_state.users):
+                    new_user = User(email=new_email, name=new_name)
+                    st.session_state.users.append(new_user)
+                    save_users(st.session_state.users)
+                    st.success(f"Nutzer '{new_name}' wurde hinzugefügt!")
+                else:
+                    st.warning("Ein Nutzer mit dieser E-Mail existiert bereits!")
+            else:
+                st.error("Bitte alle Felder ausfüllen!")
+
+    with col2:
+        st.subheader("Vorhandene Nutzer")
+        if st.session_state.users:
+            for user in st.session_state.users:
+                st.write(f"- {user.name} ({user.email})")
+        else:
+            st.info("Keine Nutzer vorhanden.")
+
+def show_device_management():
+    st.write("## Geräteverwaltung")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Gerät anlegen")
+        device_id = st.number_input("Geräte-ID", min_value=1, step=1)
+        device_name = st.text_input("Gerätename")
+        responsible_person = st.selectbox(
+            "Verantwortliche Person", options=st.session_state.users, format_func=lambda user: user.name
+        )
+        creation_date = st.date_input("Erstellungsdatum", value=datetime.now())
+        end_of_life = st.date_input("End-of-Life Datum")
+
+        if st.button("Gerät hinzufügen"):
+            if device_name and responsible_person and creation_date and end_of_life:
+                new_device = Device(
+                    id=device_id,
+                    name=device_name,
+                    responsible_person=responsible_person,
+                    creation_date=datetime.combine(creation_date, datetime.min.time()),
+                    end_of_life=datetime.combine(end_of_life, datetime.min.time()),
+                )
+                st.session_state.devices.append(new_device)
+                save_devices(st.session_state.devices)
+                st.success(f"Gerät '{new_device.name}' wurde erfolgreich hinzugefügt!")
+            else:
+                st.error("Bitte alle Pflichtfelder ausfüllen!")
+
+    with col2:
+        st.subheader("Vorhandene Geräte")
+        for device in st.session_state.devices:
+            st.write(device)
+
+def show_reservation_system():
+    st.write("## Reservierungs-System")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Neue Reservierung anlegen")
+        selected_device = st.selectbox(
+            "Gerät auswählen", options=st.session_state.devices, format_func=lambda device: f"{device.name} (ID: {device.id})"
+        )
+        selected_user = st.selectbox(
+            "Benutzer auswählen", options=st.session_state.users, format_func=lambda user: user.name
+        )
+        reservation_date = st.date_input("Reservierungsdatum", value=datetime.now())
+
+        existing_reservations = [r for r in st.session_state.reservations if r.device.id == selected_device.id]
+        conflicting_reservation = None
+
+        for reservation in existing_reservations:
+            if reservation.reservation_date == datetime.combine(reservation_date, datetime.min.time()):
+                conflicting_reservation = reservation
+                break
+
+        if conflicting_reservation:
+            if st.button("Zur Warteschlange hinzufügen"):
+                if selected_device.id not in st.session_state.waitlist:
+                    st.session_state.waitlist[selected_device.id] = []
+                st.session_state.waitlist[selected_device.id].append(selected_user.to_dict())
+                save_waitlist(st.session_state.waitlist)
+                st.success(f"{selected_user.name} wurde zur Warteschlange für {selected_device.name} hinzugefügt.")
+        else:
+            if st.button("Reservierung hinzufügen"):
+                new_reservation = Reservation(
+                    device=selected_device,
+                    user=selected_user,
+                    reservation_date=datetime.combine(reservation_date, datetime.min.time()),
+                )
+                st.session_state.reservations.append(new_reservation)
+                save_reservations(st.session_state.reservations)
+                st.success(f"Reservierung für '{selected_device.name}' wurde erfolgreich hinzugefügt!")
+
+    with col2:
+        st.subheader("Vorhandene Reservierungen")
+        if st.session_state.reservations:
+            for i, reservation in enumerate(st.session_state.reservations):
+                st.markdown(f"""
+                - **Gerät**: {reservation.device.name} (ID: {reservation.device.id})
+                - **Benutzer**: {reservation.user.name}
+                - **Reservierungsdatum**: {reservation.reservation_date.strftime('%d.%m.%Y')}
+                """)
+                if st.button("Reservierung entfernen", key=f"remove_{i}"):
+                    st.session_state.reservations.pop(i)
+                    save_reservations(st.session_state.reservations)
+                    st.success("Reservierung entfernt.")
+                    st.experimental_rerun()
+        else:
+            st.info("Keine Reservierungen vorhanden.")
+
+    st.subheader("Warteschlange")
+    selected_device_for_waitlist = st.selectbox(
+        "Gerät für die Warteschlange auswählen", options=st.session_state.devices, format_func=lambda device: f"{device.name} (ID: {device.id})"
+    )
+
+    if selected_device_for_waitlist.id in st.session_state.waitlist:
+        st.write("### Aktuelle Warteschlange:")
+        waitlist = st.session_state.waitlist[selected_device_for_waitlist.id]
+        for user_data in waitlist:
+            user = User.from_dict(user_data)
+            st.write(f"- {user.name} ({user.email})")
+
+        if st.button("Nächsten aus der Warteschlange fördern"):
+            if waitlist:
+                next_user = User.from_dict(waitlist.pop(0))
+                save_waitlist(st.session_state.waitlist)
+                st.success(f"{next_user.name} wurde zur aktiven Reservierung für {selected_device_for_waitlist.name} gefördert.")
+
+    else:
+        st.info("Keine Warteschlange für dieses Gerät.")
+
+def show_maintenance_management():
+    st.write("## Wartungs-Management")
+    st.write("Zeigt die nächsten Wartungen und Wartungskosten an.")
+    for device in st.session_state.devices:
+        st.write(f"Gerät: {device.name}, Nächste Wartung: {device.end_of_life}, Verantwortlich: {device.responsible_person.name}")
+
+# Hauptmenü
+st.write("# Gerätemanagement System")
+st.write("## Navigation")
+
+menu_option = st.selectbox("Wählen Sie eine Option:", ["Nutzerverwaltung", "Geräteverwaltung", "Reservierungs-System", "Wartungs-Management"])
+
+if menu_option == "Nutzerverwaltung":
+    show_user_management()
+elif menu_option == "Geräteverwaltung":
+    show_device_management()
+elif menu_option == "Reservierungs-System":
+    show_reservation_system()
+elif menu_option == "Wartungs-Management":
+    show_maintenance_management()
